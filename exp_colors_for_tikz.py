@@ -2,7 +2,9 @@ import matplotlib
 import numpy as np
 
 N = 6
+print "Don't know why this only works in IPython"
 cm = matplotlib.cm.cool(np.linspace(0, 1, N))
+# cm = matplotlib.cm.cubehelix(np.linspace(0, 1, N))
 
 # cm = np.round(255*cm).astype(int)
 

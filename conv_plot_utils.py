@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 # \definecolor{mpibg1}{HTML}{5D8B8A} % dark green
 # \definecolor{mpibg2}{HTML}{BFDFDE} % light blue green
@@ -15,18 +16,31 @@ try:
     sns.set(style="whitegrid")
     mpilightgreen = '#BFDFDE'
     mpigraygreen = '#7DA9A8'
-    # sns.set_palette(sns.dark_palette(mpigraygreen, 6, reverse=True))
-    sns.set_palette('cool', 3)
+    # sns.set_palette(sns.dark_palette(mpigraygreen, 4, reverse=True))
+    # sns.set_palette(sns.dark_palette(mpilightgreen, 6, reverse=True))
+    # sns.set_palette('cool', 3)
+    sns.set_palette('ocean_r', 7)
 except ImportError:
     print 'I recommend to install seaborn for nicer plots'
 
 
 def conv_plot(abscissa, datalist, leglist=None, fit=None,
               markerl=None, xlabel=None, ylabel=None,
+              fititem=0, fitfac=1.,
               title='title not provided', fignum=None,
               ylims=None, xlims=None,
-              logscale=False,
+              yticks=None,
+              logscale=False, logbase=10,
               tikzfile=None, showplot=True):
+    """Universal function for convergence plots
+
+    Parameters
+    ----------
+    fititem : integer, optional
+        to which item of the data the fit is aligned, defaults to `0`
+    fitfac : float, optional
+        to shift the fitting lines in y-direction, defaults to `1.0`
+    """
 
     lend = len(datalist)
     if markerl is None:
@@ -46,18 +60,24 @@ def conv_plot(abscissa, datalist, leglist=None, fit=None,
             abspow = []
             for ela in abscissa:
                 try:
-                    abspow.append((ela/abscissa[0])**(-cfit)*datalist[0][0])
+                    abspow.append((ela/abscissa[0])**(-cfit) *
+                                  datalist[0][fititem]*fitfac)
                 except TypeError:
-                    abspow.append((ela/abscissa[0])**(-cfit)*datalist[0][0][0])
+                    abspow.append((ela/abscissa[0])**(-cfit) *
+                                  datalist[0][0][fititem]*fitfac)
             ax.plot(abscissa, abspow, 'k'+fls[i])
 
     if logscale:
-        ax.set_xscale('log', basex=2)
-        ax.set_yscale('log', basey=2)
+        ax.set_xscale('log', basex=logbase)
+        ax.set_yscale('log', basey=logbase)
     if ylims is not None:
         plt.ylim(ylims)
     if xlims is not None:
         plt.xlim(xlims)
+    if yticks is not None:
+        plt.yticks(yticks)
+    if title is not None:
+        ax.set_title(title)
 
     plt.legend()
     plt.grid(which='major')
@@ -72,6 +92,9 @@ def para_plot(abscissa, datalist, leglist=None, levels=None,
               logscale=None, logscaley=None,
               tikzfile=None, showplot=True,
               colorscheme=None):
+    """plot data for several parameters
+
+    """
 
     lend = len(datalist)
     if markerl is None:
@@ -112,6 +135,8 @@ def para_plot(abscissa, datalist, leglist=None, levels=None,
     plt.legend()
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    if title is not None:
+        ax.set_title(title)
 
     # plt.grid(which='both')
 
@@ -134,3 +159,14 @@ def _gohome(tikzfile=None, showplot=True):
 
     if showplot:
         plt.show(block=False)
+
+
+def print_nparray_tex(array, math=True, fstr='.4f'):
+    tdarray = np.atleast_2d(array)
+    if math:
+        print " \\\\\n".join([" & ".join(map(('${0:' + fstr + '}$').
+                                         format, line))
+                             for line in tdarray])
+    else:
+        print " \\\\\n".join([" & ".join(map('{0:' + fstr + '}'.format, line))
+                             for line in tdarray])
