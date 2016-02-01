@@ -105,7 +105,7 @@ def para_plot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
         markerl = ['']*lend
     if usedefaultmarkers:
         import matplotlib
-        markerl = matplotlib.markers.MarkerStyle()
+        markerl = matplotlib.markers.MarkerStyle().filled_markers
 
     if leglist is None:
         leglist = [None]*lend
