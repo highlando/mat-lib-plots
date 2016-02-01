@@ -1,16 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# \definecolor{mpibg1}{HTML}{5D8B8A} % dark green
-# \definecolor{mpibg2}{HTML}{BFDFDE} % light blue green
-# \definecolor{mpibg3}{HTML}{A7C1C0} % gray green
-# \definecolor{mpibg4}{HTML}{7DA9A8} % medium gray green
-# \definecolor{mpired}{HTML}{990000}
-# \definecolor{mpigreen}{HTML}{5C871D}
-# \definecolor{mpiblue}{HTML}{006AA9}
-# \definecolor{cscred}{rgb}{0.75,0,0}
-# \definecolor{cscorange}{rgb}{1.0,.5625,0}
-
 try:
     import seaborn as sns
     sns.set(style="whitegrid")
@@ -22,6 +12,11 @@ try:
     sns.set_palette('ocean_r', 7)
 except ImportError:
     print 'I recommend to install seaborn for nicer plots'
+
+
+__all__ = ['conv_plot',
+           'para_plot',
+           'print_nparray_tex']
 
 
 def conv_plot(abscissa, datalist, leglist=None, fit=None,
@@ -85,20 +80,33 @@ def conv_plot(abscissa, datalist, leglist=None, fit=None,
     return
 
 
-def para_plot(abscissa, datalist, leglist=None, levels=None,
+def para_plot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
               markerl=None, xlabel=None, ylabel=None,
+              usedefaultmarkers=False,
               title='title not provided', fignum=None,
-              ylims=None, xlims=None,
+              ylims=None, xlims=None, legloc='upper left',
               logscale=None, logscaley=None,
               tikzfile=None, showplot=True,
               colorscheme=None):
     """plot data for several parameters
 
+    Parameters
+    ---
+    markerl : iterable, optional
+        list of (`matplotlib`) markers to be used,
+        defaults to `None` (no markers)
+    usedefaultmarkers : boolean, optional
+        whether to use the `matplotlib` default markers, overrides `markerl`,
+        defaults to `False`
     """
 
     lend = len(datalist)
     if markerl is None:
         markerl = ['']*lend
+    if usedefaultmarkers:
+        import matplotlib
+        markerl = matplotlib.markers.MarkerStyle()
+
     if leglist is None:
         leglist = [None]*lend
     # handllist = ['lghdl{0}'.format(x) for x in range(lend)]
@@ -109,6 +117,8 @@ def para_plot(abscissa, datalist, leglist=None, levels=None,
     leghndll = []
     for k, data in enumerate(datalist):
         labl = leglist[k]
+        if abscissal is not None:
+            abscissa = abscissal[k]
         if labl is None:
             plt.plot(abscissa, data, markerl[k], linewidth=3, label=leglist[k])
         else:
@@ -132,7 +142,7 @@ def para_plot(abscissa, datalist, leglist=None, levels=None,
         plt.xlim(xlims)
 
     # plt.legend(handles=leghndll)
-    plt.legend()
+    plt.legend(loc=legloc)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if title is not None:
