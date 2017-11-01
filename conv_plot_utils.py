@@ -1,27 +1,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-try:
-    import seaborn as sns
-    sns.set(style="whitegrid")
-    mpilightgreen = '#BFDFDE'
-    mpigraygreen = '#7DA9A8'
-    # sns.set_palette(sns.dark_palette(mpigraygreen, 4, reverse=True))
-    # sns.set_palette(sns.dark_palette(mpilightgreen, 6, reverse=True))
-    # sns.set_palette('cool', 3)
-    sns.set_palette('ocean_r', 7)
-except ImportError:
-    print 'I recommend to install seaborn for nicer plots'
-
-
 __all__ = ['conv_plot',
-           'para_plot',
+           'paraplot',
            'print_nparray_tex']
 
 
-def conv_plot(abscissa, datalist, leglist=None, fit=None,
+def conv_plot(abscissa, datalist, fit=None,
               markerl=None, xlabel=None, ylabel=None,
               fititem=0, fitfac=1.,
+              leglist=None, legloc=1,
               title='title not provided', fignum=None,
               ylims=None, xlims=None,
               yticks=None,
@@ -36,6 +24,18 @@ def conv_plot(abscissa, datalist, leglist=None, fit=None,
     fitfac : float, optional
         to shift the fitting lines in y-direction, defaults to `1.0`
     """
+
+    try:
+        import seaborn as sns
+        sns.set(style="whitegrid")
+        # mpilightgreen = '#BFDFDE'
+        # mpigraygreen = '#7DA9A8'
+        # sns.set_palette(sns.dark_palette(mpigraygreen, 4, reverse=True))
+        # sns.set_palette(sns.dark_palette(mpilightgreen, 6, reverse=True))
+        # sns.set_palette('cool', 3)
+        sns.set_palette('ocean_r', 7)
+    except ImportError:
+        print('I recommend to install seaborn for nicer plots')
 
     lend = len(datalist)
     if markerl is None:
@@ -74,20 +74,22 @@ def conv_plot(abscissa, datalist, leglist=None, fit=None,
     if title is not None:
         ax.set_title(title)
 
-    plt.legend()
+    plt.legend(loc=legloc)
     plt.grid(which='major')
     _gohome(tikzfile, showplot)
     return
 
 
-def para_plot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
-              markerl=None, xlabel=None, ylabel=None,
-              usedefaultmarkers=False,
-              title='title not provided', fignum=None,
-              ylims=None, xlims=None, legloc='upper left',
-              logscale=None, logscaley=None,
-              tikzfile=None, showplot=True,
-              colorscheme=None):
+def paraplot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
+             markerl=None, xlabel=None, ylabel=None,
+             usedefaultmarkers=False,
+             title='title not provided', fignum=None,
+             ylims=None, xlims=None, legloc='upper left',
+             xticks=None,
+             downsample=None, keeppointslist=None,
+             logscale=None, logscaley=None,
+             tikzfile=None, showplot=True,
+             colorscheme=None, **kwargs):
     """plot data for several parameters
 
     Parameters
@@ -98,6 +100,10 @@ def para_plot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
     usedefaultmarkers : boolean, optional
         whether to use the `matplotlib` default markers, overrides `markerl`,
         defaults to `False`
+    downsample : int, list, optional
+        if not `None` whether to only plot every *i*-th data point
+    keeppointslist : list, optional
+        list of lists of data points that should be kept when downsampling
     """
 
     lend = len(datalist)
@@ -113,6 +119,26 @@ def para_plot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
 
     plt.figure(fignum)
     ax = plt.axes()
+    if xticks is not None:
+        ax.set_xticks(xticks)
+
+    # downsampling the data
+    if downsample is not None:
+        dsdt, dsabsc = [], []
+        for k, data in enumerate(datalist):
+            if abscissal is not None:
+                abscissa = abscissal[k]
+            try:
+                samplerate = downsample[k]
+            except TypeError:  # all samplings the same for all data
+                samplerate = downsample
+            filterfield = np.arange(0, len(abscissa), samplerate).tolist()
+            if keeppointslist is not None:
+                filterfield.extend(keeppointslist[k])
+            dwnsmpabs = np.unique(np.array(filterfield))
+            dsdt.append(np.array(data)[dwnsmpabs])
+            dsabsc.append(np.array(abscissa)[dwnsmpabs])
+        datalist, abscissal = dsdt, dsabsc
 
     leghndll = []
     for k, data in enumerate(datalist):
@@ -143,8 +169,10 @@ def para_plot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
 
     # plt.legend(handles=leghndll)
     plt.legend(loc=legloc)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
     if title is not None:
         ax.set_title(title)
 
@@ -154,6 +182,8 @@ def para_plot(abscissa, datalist, abscissal=None, leglist=None, levels=None,
 
     return
 
+para_plot = paraplot  # there was a renaming once...
+
 
 def _gohome(tikzfile=None, showplot=True):
     if tikzfile is not None:
@@ -162,21 +192,32 @@ def _gohome(tikzfile=None, showplot=True):
             tikz_save(tikzfile,
                       figureheight='\\figureheight',
                       figurewidth='\\figurewidth')
-            print 'you may want to use this command\n\\input{' +\
-                tikzfile + '}\n'
+            print('you may want to use this command\n\\input{' +
+                  tikzfile + '}\n')
         except ImportError:
-            print 'matplotlib2tikz need to export tikz filez'
+            print('matplotlib2tikz need to export tikz filez')
 
     if showplot:
         plt.show(block=False)
 
 
-def print_nparray_tex(array, math=True, fstr='.4f'):
+def print_nparray_tex(array, math=True, fstr='.4f', name=None):
     tdarray = np.atleast_2d(array)
+    if name is not None:
+        print(name + ' & ')
     if math:
-        print " \\\\\n".join([" & ".join(map(('${0:' + fstr + '}$').
+        print(" \\\\\n".join([" & ".join(map(('${0:' + fstr + '}$').
                                          format, line))
-                             for line in tdarray])
+                             for line in tdarray]))
     else:
-        print " \\\\\n".join([" & ".join(map('{0:' + fstr + '}'.format, line))
-                             for line in tdarray])
+        print(" \\\\\n".join([" & ".join(map(('{0:' + fstr + '}').
+                             format, line))
+                             for line in tdarray]))
+
+
+def print_nparray(array, fstr='.4f', name=None):
+    tdarray = np.atleast_2d(array)
+    if name is not None:
+        print(name + ':')
+    print(";".join([", ".join(map(('{0:' + fstr + '}').format, line))
+                   for line in tdarray]))
