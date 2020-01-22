@@ -201,16 +201,23 @@ def _gohome(tikzfile=None, showplot=True):
         plt.show(block=False)
 
 
-def print_nparray_tex(array, math=True, fstr='.4f', name=None):
+def print_nparray_tex(array, formatit='math', fstr='.4f', name=None):
     tdarray = np.atleast_2d(array)
     if name is not None:
         print(name + ' & ')
-    if math:
+    if formatit is None:
+        print(" \\\\\n".join([" & ".join(map(('{0:' + fstr + '}').
+                             format, line))
+                             for line in tdarray]))
+    elif formatit == 'math':
         print(" \\\\\n".join([" & ".join(map(('${0:' + fstr + '}$').
                                          format, line))
                              for line in tdarray]))
     else:
-        print(" \\\\\n".join([" & ".join(map(('{0:' + fstr + '}').
+        fsb = '\\' + formatit + '{{'
+        fse = '}}'
+
+        print(" \\\\\n".join([" & ".join(map((fsb + '{0:' + fstr + '}' + fse).
                              format, line))
                              for line in tdarray]))
 
